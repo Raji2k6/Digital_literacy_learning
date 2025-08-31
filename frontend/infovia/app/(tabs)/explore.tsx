@@ -1,110 +1,164 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import React, { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  Linking,
+} from "react-native";
 
-import { Collapsible } from '@/components/Collapsible';
-import { ExternalLink } from '@/components/ExternalLink';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
-import { IconSymbol } from '@/components/ui/IconSymbol';
+type NewsItem = {
+  title: string;
+  description: string;
+  url?: string;
+  source?: string;
+};
 
-export default function TabTwoScreen() {
+const API_KEYS = [
+  "bff7d8cd3abf431da64621406b2eb285",
+  "pub_ea8e0afe0cfd42e5a6ab6734424dd137",
+  "959fa753ad28a4c5ebb02cff629be75c",
+];
+
+// Example API fetch function, replace API endpoint with actual if different
+async function fetchNewsByApiKey(apiKey: string): Promise<NewsItem[]> {
+  try {
+    const res = await fetch(
+      `https://newsapi.org/v2/top-headlines?country=us&pageSize=5&apiKey=${apiKey}`
+    );
+    const data = await res.json();
+
+    if (data.articles && Array.isArray(data.articles)) {
+      return data.articles.map((article: any) => ({
+        title: article.title,
+        description: article.description || "",
+        url: article.url,
+        source: article.source?.name || "Unknown",
+      }));
+    }
+    return [];
+  } catch (error) {
+    console.error("Error fetching news for API key:", apiKey, error);
+    return [];
+  }
+}
+
+export default function Explore() {
+  const [news, setNews] = useState<NewsItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchAllNews = async () => {
+      setLoading(true);
+      let combinedNews: NewsItem[] = [];
+
+      for (const key of API_KEYS) {
+        const newsFromKey = await fetchNewsByApiKey(key);
+        combinedNews = combinedNews.concat(newsFromKey);
+      }
+
+      combinedNews.sort((a, b) => a.title.localeCompare(b.title));
+
+      setNews(combinedNews);
+      setLoading(false);
+    };
+
+    fetchAllNews();
+  }, []);
+
+  const handlePress = (url?: string) => {
+    if (url) {
+      Linking.openURL(url).catch(() =>
+        Alert.alert("Error", "Failed to open the article link.")
+      );
+    } else {
+      Alert.alert("Info", "More content coming soon!");
+    }
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#2a52be" />
+      </View>
+    );
+  }
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#D0D0D0', dark: '#353636' }}
-      headerImage={
-        <IconSymbol
-          size={310}
-          color="#808080"
-          name="chevron.left.forwardslash.chevron.right"
-          style={styles.headerImage}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Explore</ThemedText>
-      </ThemedView>
-      <ThemedText>This app includes example code to help you get started.</ThemedText>
-      <Collapsible title="File-based routing">
-        <ThemedText>
-          This app has two screens:{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/explore.tsx</ThemedText>
-        </ThemedText>
-        <ThemedText>
-          The layout file in <ThemedText type="defaultSemiBold">app/(tabs)/_layout.tsx</ThemedText>{' '}
-          sets up the tab navigator.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/router/introduction">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Android, iOS, and web support">
-        <ThemedText>
-          You can open this project on Android, iOS, and the web. To open the web version, press{' '}
-          <ThemedText type="defaultSemiBold">w</ThemedText> in the terminal running this project.
-        </ThemedText>
-      </Collapsible>
-      <Collapsible title="Images">
-        <ThemedText>
-          For static images, you can use the <ThemedText type="defaultSemiBold">@2x</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">@3x</ThemedText> suffixes to provide files for
-          different screen densities
-        </ThemedText>
-        <Image source={require('@/assets/images/react-logo.png')} style={{ alignSelf: 'center' }} />
-        <ExternalLink href="https://reactnative.dev/docs/images">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Custom fonts">
-        <ThemedText>
-          Open <ThemedText type="defaultSemiBold">app/_layout.tsx</ThemedText> to see how to load{' '}
-          <ThemedText style={{ fontFamily: 'SpaceMono' }}>
-            custom fonts such as this one.
-          </ThemedText>
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/versions/latest/sdk/font">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Light and dark mode components">
-        <ThemedText>
-          This template has light and dark mode support. The{' '}
-          <ThemedText type="defaultSemiBold">useColorScheme()</ThemedText> hook lets you inspect
-          what the user&apos;s current color scheme is, and so you can adjust UI colors accordingly.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/develop/user-interface/color-themes/">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Animations">
-        <ThemedText>
-          This template includes an example of an animated component. The{' '}
-          <ThemedText type="defaultSemiBold">components/HelloWave.tsx</ThemedText> component uses
-          the powerful <ThemedText type="defaultSemiBold">react-native-reanimated</ThemedText>{' '}
-          library to create a waving hand animation.
-        </ThemedText>
-        {Platform.select({
-          ios: (
-            <ThemedText>
-              The <ThemedText type="defaultSemiBold">components/ParallaxScrollView.tsx</ThemedText>{' '}
-              component provides a parallax effect for the header image.
-            </ThemedText>
-          ),
-        })}
-      </Collapsible>
-    </ParallaxScrollView>
+    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
+      <Text style={styles.header}>Explore Latest News</Text>
+      {news.map((item, index) => (
+        <View key={index} style={styles.card}>
+          <Text style={styles.cardTitle}>{item.title}</Text>
+          <Text style={styles.cardSource}>Source: {item.source}</Text>
+          <Text style={styles.cardDesc}>{item.description}</Text>
+          <TouchableOpacity
+            style={styles.readMoreButton}
+            onPress={() => handlePress(item.url)}
+          >
+            <Text style={styles.readMoreText}>Read More</Text>
+          </TouchableOpacity>
+        </View>
+      ))}
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  headerImage: {
-    color: '#808080',
-    bottom: -90,
-    left: -35,
-    position: 'absolute',
+  container: { flex: 1, backgroundColor: "#f2f7fc" },
+  scrollContent: { padding: 20, paddingBottom: 40 },
+  loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
+
+  header: {
+    fontSize: 32,
+    fontWeight: "900",
+    color: "#2a52be",
+    marginBottom: 25,
+    textAlign: "center",
+    letterSpacing: 1,
   },
-  titleContainer: {
-    flexDirection: 'row',
-    gap: 8,
+  card: {
+    backgroundColor: "#ffffff",
+    padding: 20,
+    borderRadius: 16,
+    marginBottom: 18,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 6 },
+    shadowRadius: 12,
+    elevation: 7,
+  },
+  cardTitle: {
+    fontSize: 20,
+    fontWeight: "800",
+    color: "#1d3557",
+    marginBottom: 6,
+  },
+  cardSource: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#457b9d",
+    marginBottom: 10,
+    fontStyle: "italic",
+  },
+  cardDesc: {
+    fontSize: 14,
+    color: "#303030",
+    marginBottom: 14,
+    lineHeight: 20,
+  },
+  readMoreButton: {
+    backgroundColor: "#2a52be",
+    paddingVertical: 10,
+    borderRadius: 12,
+    alignItems: "center",
+  },
+  readMoreText: {
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: 14,
   },
 });

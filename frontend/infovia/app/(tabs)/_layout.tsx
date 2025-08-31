@@ -1,45 +1,69 @@
-import { Tabs } from 'expo-router';
-import React from 'react';
-import { Platform } from 'react-native';
-
-import { HapticTab } from '@/components/HapticTab';
-import { IconSymbol } from '@/components/ui/IconSymbol';
-import TabBarBackground from '@/components/ui/TabBarBackground';
-import { Colors } from '@/constants/Colors';
-import { useColorScheme } from '@/hooks/useColorScheme';
+import { HapticTab } from '@/components/HapticTab'
+import TabBarBackground from '@/components/ui/TabBarBackground'
+import { useColorScheme } from '@/hooks/useColorScheme'
+import { Ionicons } from '@expo/vector-icons'
+import { Tabs } from 'expo-router'
+import React, { useEffect, useState } from 'react'
+import { Image, StyleSheet, View } from 'react-native'
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
+  const colorScheme = useColorScheme()
+  const [showTabs, setShowTabs] = useState(false)
+
+  useEffect(() => {
+    const timer = setTimeout(() => setShowTabs(true), 3000)
+    return () => clearTimeout(timer)
+  }, [])
+
+  if (!showTabs) {
+    return (
+      <View style={styles.splashContainer}>
+        <Image source={require('@/assets/images/logo.png')} style={styles.logo} />
+      </View>
+    )
+  }
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
         headerShown: false,
         tabBarButton: HapticTab,
         tabBarBackground: TabBarBackground,
-        tabBarStyle: Platform.select({
-          ios: {
-            // Use a transparent background on iOS to show the blur effect
-            position: 'absolute',
-          },
-          default: {},
-        }),
-      }}>
+        tabBarActiveTintColor: 'rgba(0, 195, 255, 1)',
+        tabBarInactiveTintColor: 'rgb(161,206,220)',
+        tabBarStyle: {
+          backgroundColor: 'rgba(255, 255, 255, 1)',
+        },
+      }}
+    >
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+          title: 'Learn',
+          tabBarIcon: () => <Ionicons size={28} name="book-outline" color="#4BFF1F" />,
         }}
       />
       <Tabs.Screen
         name="explore"
         options={{
           title: 'Explore',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
+          tabBarIcon: ({ color }) => <Ionicons size={28} name="globe-outline" color="#00008B" />,
         }}
       />
     </Tabs>
-  );
+  )
 }
+
+const styles = StyleSheet.create({
+  splashContainer: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  logo: {
+    width: 500,
+    height: 500,
+    resizeMode: 'contain',
+  },
+})
