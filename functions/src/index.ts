@@ -1,14 +1,12 @@
-import * as dotenv from "dotenv";
-dotenv.config();
 import * as functions from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
 import * as admin from "firebase-admin";
-import { GoogleGenerativeAI } from "@google/generative-ai";
 
-admin.initializeApp();
+// Initialize Firebase Admin (only once)
+if (!admin.apps.length) {
+  admin.initializeApp();
+}
 const db = admin.firestore();
-
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
 // ---------- Types ----------
 interface GenerateQuizData {
@@ -39,15 +37,32 @@ interface GetCachedQuizData {
   quizId: string;
 }
 
-// ---------- Callable Functions ----------
+// Test function to verify setup
+export const testFunction = functions.onCall(async (request) => {
+  logger.info("Test function called!");
+  return { success: true, message: "Functions are working!" };
+});
+// logger.info("Gemini API Key present?", !!apiKey);
+// logger.info("Prompt being sent:", prompt);
 
-// Generate Quiz
+// Generate Quiz (with lazy Gemini loading)
 export const generateMILQuiz = functions.onCall<GenerateQuizData>(
   async (request) => {
     const data = request.data;
     const userId = request.auth?.uid || "anonymous";
 
     try {
+      // Lazy load Gemini AI inside the function to avoid initialization timeout
+      const { GoogleGenerativeAI } = await import("@google/generative-ai");
+
+      const apiKey = process.env.GEMINI_API_KEY;
+      
+      if (!apiKey) {
+        logger.error("❌ GEMINI_API_KEY not found in environment variables");
+        throw new Error("API key not configured");
+      }
+
+      const genAI = new GoogleGenerativeAI(apiKey);
       const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
 
       const prompt = `
@@ -93,7 +108,7 @@ Example Format as valid JSON array:
 ]
 `;
 
-      logger.info("Prompt sent to Gemini:", prompt);
+      logger.info("Sending prompt to Gemini...");
 
       const result = await model.generateContent(prompt);
       const text = result.response.text();
@@ -181,14 +196,14 @@ export const getUserProgress = functions.onCall<Record<string, unknown>>(
       );
 
       return {
-  recentAttempts,
-  totalQuizzes,
-  totalScore,
-  lastActivity:
-    recentAttempts.length > 0 && "createdAt" in recentAttempts[0]
-      ? (recentAttempts[0].createdAt as admin.firestore.Timestamp)
-      : null,
-};
+        recentAttempts,
+        totalQuizzes,
+        totalScore,
+        lastActivity:
+          recentAttempts.length > 0 && "createdAt" in recentAttempts[0]
+            ? (recentAttempts[0].createdAt as admin.firestore.Timestamp)
+            : null,
+      };
     } catch (err) {
       logger.error("❌ Error fetching progress:", err);
       return { recentAttempts: [] };
@@ -215,3 +230,41 @@ export const getCachedQuiz = functions.onCall<GetCachedQuizData>(
     }
   }
 );
+
+
+// Add this to your functions/src/index.ts to test Gemini
+
+export const testGemini = functions.onCall(async (request) => {
+  try {
+    const apiKey = process.env.GEMINI_API_KEY;
+    
+    if (!apiKey) {
+      return {
+        success: false,
+        error: "No API key found",
+        envVars: Object.keys(process.env).filter(key => key.includes('GEMINI'))
+      };
+    }
+
+    // Test Gemini connection
+    const { GoogleGenerativeAI } = await import("@google/generative-ai");
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+
+    const result = await model.generateContent("Generate 1 simple quiz question in JSON format: {\"question\": \"What is 2+2?\", \"answer\": \"4\"}");
+    const response = result.response.text();
+
+    return {
+      success: true,
+      geminiResponse: response,
+      message: "Gemini is working!"
+    };
+
+  } catch (error) {
+    return {
+      success: false,
+      error: error.message,
+      stack: error.stack
+    };
+  }
+});
