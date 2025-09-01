@@ -4,13 +4,12 @@ import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyAUK7cxgOQIdaAoBtENTtVSqVQ4tYg9mFI",
-  authDomain: "digitalliteracyapp-ae5fe.firebaseapp.com",
-  projectId: "digitalliteracyapp-ae5fe",
-  storageBucket: "digitalliteracyapp-ae5fe.firebasestorage.app",
-  messagingSenderId: "1084538513178",
-  appId: "1:1084538513178:web:c5d6b73be09deff3202ea3",
-  measurementId: "G-YJC9TWJQ4G"
+  apiKey: "AIzaSyBoxQZhK9qtFvg_ZeDXCFxKP62gsh73cC8",
+  authDomain: "infovia-5d18a.firebaseapp.com",
+  projectId: "infovia-5d18a",
+  storageBucket: "infovia-5d18a.firebasestorage.app",
+  messagingSenderId: "1061299118475",
+  appId: "1:1061299118475:web:d0646427883445c9dc4f8e"
 };
 
 // Initialize Firebase app
